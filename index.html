@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMI</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --border: #2a2a32;
+    --text: #f0ede8;
+    --muted: #6b6878;
+    --accent: #c8f542;
+    --underweight: #60c3f5;
+    --normal: #c8f542;
+    --overweight: #f5c842;
+    --obese: #f55c42;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 40px 16px;
+    position: relative;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,245,66,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,245,66,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+
+  /* Glow orb */
+  body::after {
+    content: '';
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,245,66,0.07) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .card {
+    position: relative;
+    z-index: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 52px 48px 44px;
+    width: 420px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .label-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(200,245,66,0.08);
+    border: 1px solid rgba(200,245,66,0.2);
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 72px;
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  h1 span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 40px;
+    line-height: 1.5;
+  }
+
+  .field {
+    margin-bottom: 20px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 52px 14px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  .field input::-webkit-outer-spin-button,
+  .field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200,245,66,0.1);
+  }
+
+  .unit {
+    position: absolute;
+    right: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  .btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 16px;
+    background: var(--accent);
+    color: #0d0d0f;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(200,245,66,0.3);
+  }
+
+  .btn:active { transform: translateY(0); }
+
+  /* Result */
+  .result {
+    margin-top: 28px;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    display: none;
+    animation: pop 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  .result.show { display: block; }
+
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .result-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .bmi-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px;
+    line-height: 1;
+    transition: color 0.4s;
+  }
+
+  .category-badge {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    transition: color 0.4s, background 0.4s;
+    margin-bottom: 6px;
+  }
+
+  /* Scale bar */
+  .scale {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg,
+      var(--underweight) 0%,
+      var(--normal) 30%,
+      var(--overweight) 65%,
+      var(--obese) 100%
+    );
+    position: relative;
+    margin-bottom: 6px;
+  }
+
+  .scale-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 2px white;
+    transition: left 0.6s cubic-bezier(0.34,1.2,0.64,1);
+  }
+
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* Color themes */
+  .cat-underweight .bmi-score,
+  .cat-underweight .category-badge { color: var(--underweight); }
+  .cat-underweight .category-badge { background: rgba(96,195,245,0.08); }
+
+  .cat-normal .bmi-score,
+  .cat-normal .category-badge { color: var(--normal); }
+  .cat-normal .category-badge { background: rgba(200,245,66,0.08); }
+
+  .cat-overweight .bmi-score,
+  .cat-overweight .category-badge { color: var(--overweight); }
+  .cat-overweight .category-badge { background: rgba(245,200,66,0.08); }
+
+  .cat-obese .bmi-score,
+  .cat-obese .category-badge { color: var(--obese); }
+  .cat-obese .category-badge { background: rgba(245,92,66,0.08); }
+
+  .result-greeting {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.01em;
+  }
+
+  .result-greeting strong {
+    color: var(--text);
+  }
+
+  .result-details {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .detail-item {
+    text-align: center;
+  }
+
+  .detail-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .detail-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--text);
+  }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--obese);
+    margin-top: 8px;
+    min-height: 16px;
+    text-align: center;
+  }
+
+  /* Recommendation box */
+  .reco-box {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .reco-title {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .reco-tip {
+    font-size: 12.5px;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 12px;
+    opacity: 0.85;
+  }
+
+  .food-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+  }
+
+  .food-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 4px 7px;
+    font-size: 10.5px;
+    color: var(--text);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .food-chip .food-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="label-tag">Health Calculator</div>
+  <h1>B<span>M</span>I</h1>
+  <p class="subtitle">Body Mass Index — enter your stats below and discover your category.</p>
+
+  <div class="field">
+    <label>Your Name</label>
+    <div class="input-wrap">
+      <input type="text" id="name" placeholder="e.g. Alex" style="padding-right:18px">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Weight</label>
+    <div class="input-wrap">
+      <input type="number" id="weight" placeholder="70" min="1" max="500">
+      <span class="unit">kg</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Height</label>
+    <div class="input-wrap">
+      <input type="number" id="height" placeholder="175" min="1" max="300">
+      <span class="unit">cm</span>
+    </div>
+  </div>
+
+  <p class="error-msg" id="error"></p>
+
+  <button class="btn" onclick="calculate()">Calculate BMI</button>
+
+  <div class="result" id="result">
+    <div class="result-greeting" id="result-greeting"></div>
+    <div class="result-row">
+      <div class="bmi-score" id="bmi-value">—</div>
+      <div class="category-badge" id="category-badge">—</div>
+    </div>
+    <div class="scale">
+      <div class="scale-marker" id="marker" style="left:0%"></div>
+    </div>
+    <div class="scale-labels">
+      <span>Under&shy;weight</span>
+      <span>Normal</span>
+      <span>Over&shy;weight</span>
+      <span>Obese</span>
+    </div>
+    <div class="result-details" id="result-details"></div>
+    <div class="reco-box" id="reco-box" style="display:none">
+      <div class="reco-title" id="reco-title"></div>
+      <p class="reco-tip" id="reco-tip"></p>
+      <div class="food-grid" id="food-grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const recommendations = {
+    underweight: {
+      title: '🥗 Foods to Help You Gain Healthy Weight',
+      tip: 'Focus on calorie-dense, nutrient-rich foods. Eat 5–6 smaller meals a day and include healthy fats and proteins to build mass steadily.',
+      foods: [
+        { icon: '🥜', name: 'Nuts & Nut Butter' },
+        { icon: '🥑', name: 'Avocado' },
+        { icon: '🍳', name: 'Eggs' },
+        { icon: '🍚', name: 'Brown Rice' },
+        { icon: '🥛', name: 'Whole Milk' },
+        { icon: '🐟', name: 'Salmon' },
+        { icon: '🍌', name: 'Banana' },
+        { icon: '🫘', name: 'Lentils & Beans' },
+        { icon: '🧀', name: 'Cheese' },
+      ]
+    },
+    normal: {
+      title: '✅ Foods to Keep You Balanced',
+      tip: 'You\'re in a great place! Maintain your weight with a colorful, varied diet rich in whole foods, lean proteins, and plenty of hydration.',
+      foods: [
+        { icon: '🥦', name: 'Broccoli' },
+        { icon: '🍎', name: 'Fresh Fruits' },
+        { icon: '🍗', name: 'Lean Chicken' },
+        { icon: '🥗', name: 'Salads' },
+        { icon: '🐟', name: 'Fish' },
+        { icon: '🌾', name: 'Whole Grains' },
+        { icon: '💧', name: 'Water (2L+)' },
+        { icon: '🫐', name: 'Berries' },
+        { icon: '🥚', name: 'Eggs' },
+      ]
+    },
+    overweight: {
+      title: '🥙 Foods to Help You Lose Weight Gently',
+      tip: 'Swap processed and high-calorie foods for fiber-rich, low-GI options. Stay hydrated and try to reduce portions rather than skipping meals.',
+      foods: [
+        { icon: '🥦', name: 'Steamed Veggies' },
+        { icon: '🍋', name: 'Lemon Water' },
+        { icon: '🍗', name: 'Grilled Chicken' },
+        { icon: '🥑', name: 'Avocado' },
+        { icon: '🫚', name: 'Olive Oil' },
+        { icon: '🥣', name: 'Oatmeal' },
+        { icon: '🍓', name: 'Berries' },
+        { icon: '🥬', name: 'Leafy Greens' },
+        { icon: '🐟', name: 'Tuna' },
+      ]
+    },
+    obese: {
+      title: '🍽️ Foods to Support Your Weight Journey',
+      tip: 'Start with small, sustainable changes. Cut out sugary drinks and ultra-processed foods first. Focus on high-fiber, high-protein meals that keep you full longer.',
+      foods: [
+        { icon: '🥬', name: 'Leafy Greens' },
+        { icon: '💧', name: 'Water & Herbal Tea' },
+        { icon: '🍗', name: 'Lean Protein' },
+        { icon: '🥕', name: 'Carrots & Veg' },
+        { icon: '🍵', name: 'Green Tea' },
+        { icon: '🫘', name: 'Beans & Legumes' },
+        { icon: '🍎', name: 'Low-sugar Fruits' },
+        { icon: '🌾', name: 'Whole Grains' },
+        { icon: '🥚', name: 'Boiled Eggs' },
+      ]
+    }
+  };
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+
+  function calculate() {
+    const name = document.getElementById('name').value.trim();
+    const w = parseFloat(document.getElementById('weight').value);
+    const h = parseFloat(document.getElementById('height').value);
+    const err = document.getElementById('error');
+
+    if (!w || !h || w <= 0 || h <= 0) {
+      err.textContent = 'Please enter valid weight and height values.';
+      return;
+    }
+    err.textContent = '';
+
+    const hm = h / 100;
+    const bmi = w / (hm * hm);
+    const rounded = Math.round(bmi * 10) / 10;
+
+    let category, catClass, markerPos, recoKey;
+
+    if (bmi < 18.5) {
+      category = 'Underweight'; catClass = 'cat-underweight';
+      markerPos = Math.max(2, (bmi / 18.5) * 15);
+      recoKey = 'underweight';
+    } else if (bmi < 25) {
+      category = 'Normal'; catClass = 'cat-normal';
+      markerPos = 15 + ((bmi - 18.5) / 6.5) * 35;
+      recoKey = 'normal';
+    } else if (bmi < 30) {
+      category = 'Overweight'; catClass = 'cat-overweight';
+      markerPos = 50 + ((bmi - 25) / 5) * 25;
+      recoKey = 'overweight';
+    } else {
+      category = 'Obese'; catClass = 'cat-obese';
+      markerPos = Math.min(97, 75 + ((bmi - 30) / 10) * 22);
+      recoKey = 'obese';
+    }
+
+    const resultEl = document.getElementById('result');
+    const bmiEl = document.getElementById('bmi-value');
+    const badgeEl = document.getElementById('category-badge');
+    const marker = document.getElementById('marker');
+    const greetingEl = document.getElementById('result-greeting');
+    const detailsEl = document.getElementById('result-details');
+    const recoBox = document.getElementById('reco-box');
+    const recoTitle = document.getElementById('reco-title');
+    const recoTip = document.getElementById('reco-tip');
+    const foodGrid = document.getElementById('food-grid');
+
+    resultEl.className = 'result show ' + catClass;
+
+    const displayName = name ? `<strong>${name}</strong>` : '<strong>You</strong>';
+    greetingEl.innerHTML = `Hello, ${displayName}! Here are your results:`;
+
+    const idealMin = (18.5 * hm * hm).toFixed(1);
+    const idealMax = (24.9 * hm * hm).toFixed(1);
+    detailsEl.innerHTML = `
+      <div class="detail-item">
+        <div class="detail-label">Weight</div>
+        <div class="detail-value">${w} kg</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Height</div>
+        <div class="detail-value">${h} cm</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Ideal Range</div>
+        <div class="detail-value" style="font-size:13px;padding-top:4px">${idealMin}–${idealMax} kg</div>
+      </div>
+    `;
+
+    // Recommendations
+    const reco = recommendations[recoKey];
+    recoTitle.textContent = reco.title;
+    recoTip.textContent = reco.tip;
+    foodGrid.innerHTML = reco.foods.map(f =>
+      `<div class="food-chip"><span class="food-icon">${f.icon}</span>${f.name}</div>`
+    ).join('');
+    recoBox.style.display = 'block';
+
+    badgeEl.textContent = category;
+    setTimeout(() => { marker.style.left = markerPos + '%'; }, 60);
+
+    const end = rounded;
+    const duration = 600;
+    const startTime = performance.now();
+    function tick(now) {
+      const t = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      bmiEl.textContent = (end * ease).toFixed(1);
+      if (t < 1) requestAnimationFrame(tick);
+      else bmiEl.textContent = end.toFixed(1);
+    }
+    requestAnimationFrame(tick);
+  }
+</script>
+</body>
+</html>
